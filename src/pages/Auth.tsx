@@ -13,6 +13,7 @@ export function Auth() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+
   // Form State
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -22,13 +23,23 @@ export function Auth() {
   const [state, setState] = useState("")
   const [error, setError] = useState("")
 
+  // Password Reset State
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetPhone, setResetPhone] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [resetSuccess, setResetSuccess] = useState("")
+
   // Check if already logged in
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    const checkSession = async () => {
+      const storedId = localStorage.getItem("farmer_id")
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (storedId || session) {
         navigate("/dashboard")
       }
-    })
+    }
+    checkSession()
   }, [navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,18 +48,35 @@ export function Auth() {
     setError("")
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // 1. Custom Table Login (Bypasses Supabase Auth Confirmation)
+      const { data: farmer, error: fetchError } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('email', email)
+        .single()
 
-      if (error) throw error
-
-      if (data.user) {
-        console.log("Login successful:", data.user)
-        localStorage.setItem("farmer_id", data.user.id)
-        navigate("/dashboard")
+      if (fetchError || !farmer) {
+        setError("Email not registered. Please sign up first.")
+        setIsLoading(false)
+        return
       }
+
+      // 2. Validate Password (Plain text check as per request)
+      if (farmer.password !== password) {
+        setError("Incorrect password.")
+        const shouldShowReset = window.confirm("Incorrect password. Would you like to reset it?")
+        if (shouldShowReset) {
+          setShowResetPassword(true)
+        }
+        setIsLoading(false)
+        return
+      }
+
+      // 3. Login Success
+      console.log("Login successful:", farmer)
+      localStorage.setItem("farmer_id", farmer.id)
+      navigate("/dashboard")
+
     } catch (err: any) {
       console.error("Login error:", err)
       setError(err.message || "Login failed")
@@ -63,32 +91,46 @@ export function Auth() {
     setError("")
 
     try {
-      // 1. Create Supabase Auth User
+      // 1. Check if email already exists in our table
+      const { data: existingUser } = await supabase
+        .from('farmers')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+      if (existingUser) {
+        throw new Error("Email already registered. Please login.")
+      }
+
+      // 2. Create Supabase Auth User to generating a Valid ID
+      // This step is CRITICAL to satisfy the foreign key constraint on 'farmers.id'
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name: name,
-            phone: phone,
-          },
-        },
       })
 
-      if (authError) throw authError
-
-      if (!authData.user) {
-        throw new Error("Failed to create account")
+      if (authError) {
+        // If user exists in Auth but not in Farmers (rare edge case), we might still want to proceed if we can get the ID.
+        // unlikely given step 1 check, unless manual DB manipulation.
+        throw authError
       }
 
-      const userId = authData.user.id
+      if (!authData.user) {
+        throw new Error("Failed to create account credential.")
+      }
 
-      // 2. Create Farmer Profile linked to Auth User
+      const newUserId = authData.user.id
+
+      // 3. Insert into Farmers Table
+      // We use the ID from step 2 to satisfy FK.
+      // We store the password in plain text as requested for the custom login flow.
       const { error: insertError } = await supabase
         .from("farmers")
         .insert([
           {
-            id: userId,
+            id: newUserId,
+            email: email,
+            password: password,
             name: name,
             phone: phone,
             city: city,
@@ -98,22 +140,99 @@ export function Auth() {
         .single()
 
       if (insertError) {
-        // If profile creation fails, we might create an orphan auth user.
-        // In a real app we'd roll back or handle this.
         console.error("Error creating profile:", insertError)
         throw insertError
       }
 
-      // 3. Signup Success
+      // 4. Signup Success -> Auto Login
       console.log("Signup successful")
-      localStorage.setItem("farmer_id", userId)
+      localStorage.setItem("farmer_id", newUserId)
       navigate("/dashboard")
+
     } catch (err: any) {
       console.error("Signup error:", err)
       setError(err.message || "Signup failed")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+    setResetSuccess("")
+
+    try {
+      // Verify user by Email and Phone
+      const { data: farmer, error: fetchError } = await supabase
+        .from('farmers')
+        .select('id')
+        .eq('email', email)
+        .eq('phone', resetPhone)
+        .single()
+
+      if (fetchError || !farmer) {
+        throw new Error("Details do not match our records.")
+      }
+
+      // Update Password
+      const { error: updateError } = await supabase
+        .from('farmers')
+        .update({ password: newPassword })
+        .eq('id', farmer.id)
+
+      if (updateError) throw updateError
+
+      setResetSuccess("Password updated successfully! Please login.")
+      setTimeout(() => {
+        setShowResetPassword(false)
+        setPassword("")
+      }, 2000)
+
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (showResetPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-muted/20">
+        <Card className="w-full max-w-md border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle>Reset Password</CardTitle>
+            <CardDescription>Verify your identity to set a new password</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleResetPassword}>
+            <CardContent className="space-y-4">
+              {error && <div className="text-red-500 text-sm">{error}</div>}
+              {resetSuccess && <div className="text-green-500 text-sm">{resetSuccess}</div>}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Phone Number (Validation)</label>
+                <Input value={resetPhone} onChange={(e) => setResetPhone(e.target.value)} required placeholder="Enter stored phone number" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Password</label>
+                <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required type="password" />
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="ghost" onClick={() => setShowResetPassword(false)}>Back to Login</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "Reset Password"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -214,6 +333,11 @@ export function Auth() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
+                    </div>
+                    <div className="text-right">
+                      <button type="button" onClick={() => setShowResetPassword(true)} className="text-xs text-primary hover:underline">
+                        Forgot Password?
+                      </button>
                     </div>
                   </CardContent>
                   <CardFooter className="flex-col gap-4">
