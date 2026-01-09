@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  CheckCircle2,
   Clock,
   Volume2,
   Check,
@@ -26,86 +26,86 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../com
 import { getForecastByCity } from "../services/weatherService"
 import { getLatestPrice, getPriceTrend } from "../services/mandiService"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
-
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
 
 export function Dashboard() {
   const { t } = useTranslation()
-<<<<<<< HEAD
   const navigate = useNavigate()
-  const [profitScore] = useState(78)
-  const [priceTrend] = useState<"up" | "down" | "stable">("up")
-  const [weatherRisk, setWeatherRisk] = useState<"low" | "medium" | "high">("medium")
 
-  // Initialize with null or temporary placeholder, NOT full mock data if we want strict real data
+  // State from User's Logic
+  const profitScore = 78
+  const profitTrend = 6
+  const [priceTrend, setPriceTrend] = useState<"up" | "down" | "stable">("up")
+  const [currentPrice, setCurrentPrice] = useState(2450)
+  const [priceChange, setPriceChange] = useState(6)
+  const [weatherRisk, setWeatherRisk] = useState<"low" | "medium" | "high">("medium")
+  const [advisoryDone, setAdvisoryDone] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+
+  // State from Strict Auth/Data Logic
   const [farmerData, setFarmerData] = useState<any>({ name: "Loading...", location: "Loading...", currentCrop: "Loading...", farmSize: "..." })
   const [, setLoading] = useState(true)
 
+  // 1. Fetch Farmer Data & Handle Auth (Strict Logic)
   useEffect(() => {
     const fetchFarmerData = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
 
         if (!session) {
-          // Force redirect to auth if no session
           navigate("/auth")
           return
         }
 
-        if (session) {
-          let { data: farmer, error } = await supabase
+        let { data: farmer, error } = await supabase
+          .from('farmers')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        // Self-heal: If profile doesn't exist, create it
+        if (!farmer) {
+          console.log("Profile missing in Dashboard, creating now...")
+          const { data: newFarmer, error: insertError } = await supabase
             .from('farmers')
-            .select('*')
-            .eq('id', session.user.id)
+            .insert([
+              {
+                id: session.user.id,
+                name: "Farmer", // Default name
+                city: null,
+                state: null,
+                phone: null
+              }
+            ])
+            .select()
             .single()
 
-          // Self-heal: If profile doesn't exist, create it
-          if (!farmer) {
-            console.log("Profile missing in Dashboard, creating now...")
-            const { data: newFarmer, error: insertError } = await supabase
-              .from('farmers')
-              .insert([
-                {
-                  id: session.user.id,
-                  name: "Farmer", // Default name
-                  city: null,
-                  state: null,
-                  phone: null
-                }
-              ])
-              .select()
-              .single()
-
-            if (insertError) {
-              console.error("Dashboard auto-create profile error:", insertError)
-            } else {
-              farmer = newFarmer
-            }
-          }
-
-          if (farmer) {
-            setFarmerData({
-              name: farmer.name || "Farmer",
-              location: (farmer.city && farmer.state) ? `${farmer.city}, ${farmer.state}` : "Unknown Location",
-              currentCrop: "Wheat",
-              farmSize: "5"
-            })
+          if (insertError) {
+            console.error("Dashboard auto-create profile error:", insertError)
           } else {
-            // Fallback if everything fails
-            console.log("Using fallback mock data due to missing profile")
-            setFarmerData({
-              name: "Farmer",
-              location: "India",
-              currentCrop: "Wheat",
-              farmSize: "--"
-            })
+            farmer = newFarmer
           }
+        }
+
+        if (farmer) {
+          setFarmerData({
+            name: farmer.name || "Farmer",
+            location: (farmer.city && farmer.state) ? `${farmer.city}, ${farmer.state}` : "Unknown Location",
+            currentCrop: "Wheat", // Default
+            farmSize: "5" // Default
+          })
+        } else {
+          // Fallback
+          setFarmerData({
+            name: "Farmer",
+            location: "India",
+            currentCrop: "Wheat",
+            farmSize: "--"
+          })
         }
       } catch (error) {
         console.error("Error fetching farmer data:", error)
-        // Ensure we don't stick on loading
         setFarmerData({
           name: "Farmer",
           location: "Error Loading Data",
@@ -120,19 +120,8 @@ export function Dashboard() {
     fetchFarmerData()
   }, [navigate])
 
-=======
-  const profitScore = 78
-  const profitTrend = 6 // percentage change
-  const [priceTrend, setPriceTrend] = useState<"up" | "down" | "stable">("up")
-  const [currentPrice, setCurrentPrice] = useState(2450)
-  const [priceChange, setPriceChange] = useState(6)
-  const [weatherRisk, setWeatherRisk] = useState<"low" | "medium" | "high">("medium")
-  const [advisoryDone, setAdvisoryDone] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  
->>>>>>> d2f79fc21866b1b570ba2d23b592343421adc5d6
+  // 2. Fetch Weather & Mandi Prices (User's Features)
   useEffect(() => {
-    // Load weather data and determine risk
     const loadWeatherRisk = async () => {
       try {
         const forecast = await getForecastByCity("Bhopal")
@@ -148,26 +137,24 @@ export function Dashboard() {
         }
       } catch (error) {
         console.error("Error loading weather risk:", error)
-        // Set default on error
         setWeatherRisk("medium")
       }
     }
-    
-    // Load mandi prices
+
     const loadMandiPrices = async () => {
       try {
         const price = await getLatestPrice(mockFarmer.currentCrop)
         if (price) {
           setCurrentPrice(price)
         }
-        
+
         const trend = await getPriceTrend(mockFarmer.currentCrop, 7)
         if (trend.length >= 2) {
           const oldPrice = trend[0].price
           const newPrice = trend[trend.length - 1].price
           const change = ((newPrice - oldPrice) / oldPrice * 100).toFixed(1)
           setPriceChange(parseFloat(change))
-          
+
           if (parseFloat(change) > 2) {
             setPriceTrend("up")
           } else if (parseFloat(change) < -2) {
@@ -178,80 +165,71 @@ export function Dashboard() {
         }
       } catch (error) {
         console.error("Error loading mandi prices:", error)
-        // Keep default values on error
       }
     }
 
     loadWeatherRisk()
     loadMandiPrices()
   }, [])
-  
-  // Voice synthesis for dashboard explanation
+
+  // Voice synthesis
   const speakDashboardSummary = () => {
     if (!('speechSynthesis' in window)) {
       alert('Voice feature not supported in this browser')
       return
     }
-    
+
     window.speechSynthesis.cancel()
-    
-    const weatherImpact = weatherRisk === "high" 
-      ? "High risk to wheat in next 7 days due to heavy rainfall" 
+
+    const weatherImpact = weatherRisk === "high"
+      ? "High risk to wheat in next 7 days due to heavy rainfall"
       : weatherRisk === "medium"
-      ? "Medium risk with moderate weather conditions expected"
-      : "Low risk to wheat in next 7 days, clear weather ahead"
-    
-    const priceAction = priceTrend === "up" 
-      ? "Wheat prices are rising. Suggested action: Hold crop for better prices" 
+        ? "Medium risk with moderate weather conditions expected"
+        : "Low risk to wheat in next 7 days, clear weather ahead"
+
+    const priceAction = priceTrend === "up"
+      ? "Wheat prices are rising. Suggested action: Hold crop for better prices"
       : "Wheat prices are stable"
-    
+
     const profitInterpretation = profitScore >= 75
       ? `Good profit potential at ${profitScore} percent if current advisory is followed. Score has increased by ${profitTrend} percent since last week`
       : profitScore >= 50
-      ? `Moderate profit potential at ${profitScore} percent. Following advisory recommendations can improve this`
-      : `Low profit potential at ${profitScore} percent. Immediate action required`
-    
-    const summary = `Dashboard summary for ${mockFarmer.name}. 
+        ? `Moderate profit potential at ${profitScore} percent. Following advisory recommendations can improve this`
+        : `Low profit potential at ${profitScore} percent. Immediate action required`
+
+    const summary = `Dashboard summary for ${farmerData.name}. 
       Weather: ${weatherImpact}. 
       Price trend: ${priceAction}. 
       Latest advisory: ${mockCropAdvisory.fertilizer.advice}. 
       Profit Score: ${profitInterpretation}.`
-    
+
     const utterance = new SpeechSynthesisUtterance(summary)
     utterance.lang = "en-IN"
     utterance.rate = 0.9
-    utterance.pitch = 1
-    
+
     utterance.onstart = () => setIsSpeaking(true)
     utterance.onend = () => setIsSpeaking(false)
     utterance.onerror = () => setIsSpeaking(false)
-    
+
     window.speechSynthesis.speak(utterance)
   }
-  
-  // Speak specific advisory
+
   const speakAdvisory = () => {
     if (!('speechSynthesis' in window)) {
       alert('Voice feature not supported in this browser')
       return
     }
-    
     window.speechSynthesis.cancel()
-    
     const text = `Latest Advisory for Fertilizer Application. ${mockCropAdvisory.fertilizer.advice}. Explanation: ${mockCropAdvisory.fertilizer.reason}`
-    
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = "en-IN"
     utterance.rate = 0.9
-    
     utterance.onstart = () => setIsSpeaking(true)
     utterance.onend = () => setIsSpeaking(false)
     utterance.onerror = () => setIsSpeaking(false)
-    
     window.speechSynthesis.speak(utterance)
   }
-  
-  // Get today's top action
+
   const getTodayTopAction = () => {
     const highPriorityAlert = mockWeatherAlerts.find(a => a.type === "high")
     if (highPriorityAlert) {
@@ -261,7 +239,6 @@ export function Dashboard() {
         type: "urgent" as const
       }
     }
-    
     if (!advisoryDone) {
       return {
         icon: "🔔",
@@ -269,17 +246,15 @@ export function Dashboard() {
         type: "advisory" as const
       }
     }
-    
     return {
       icon: "✅",
       text: "All priority tasks completed. Check marketplace for selling opportunities",
       type: "success" as const
     }
   }
-  
+
   const topAction = getTodayTopAction()
-  
-  // Sort alerts by priority
+
   const sortedAlerts = [...mockWeatherAlerts].sort((a, b) => {
     const priority = { high: 3, medium: 2, low: 1 }
     return priority[b.type] - priority[a.type]
@@ -294,15 +269,9 @@ export function Dashboard() {
         transition={{ duration: 0.5 }}
       >
         <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-<<<<<<< HEAD
-          <CardHeader>
-            <CardTitle className="text-3xl">
-              {t('dashboard.welcome')}, {farmerData.name}! 👋
-=======
           <CardHeader className="pb-4">
             <CardTitle className="text-2xl md:text-3xl">
-              {t('dashboard.welcome')}, {mockFarmer.name}! 👋
->>>>>>> d2f79fc21866b1b570ba2d23b592343421adc5d6
+              {t('dashboard.welcome')}, {farmerData.name}! 👋
             </CardTitle>
             <CardDescription className="text-base">
               {farmerData.location} • Currently growing {farmerData.currentCrop} on {farmerData.farmSize} acres
@@ -310,18 +279,17 @@ export function Dashboard() {
           </CardHeader>
         </Card>
       </motion.div>
-      
+
       {/* Today's Top Action Strip */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.05 }}
       >
-        <Card className={`border-2 ${
-          topAction.type === 'urgent' ? 'bg-red-50 border-red-300' :
-          topAction.type === 'advisory' ? 'bg-amber-50 border-amber-300' :
-          'bg-green-50 border-green-300'
-        }`}>
+        <Card className={`border-2 ${topAction.type === 'urgent' ? 'bg-red-50 border-red-300' :
+            topAction.type === 'advisory' ? 'bg-amber-50 border-amber-300' :
+              'bg-green-50 border-green-300'
+          }`}>
           <CardContent className="py-3 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -364,7 +332,7 @@ export function Dashboard() {
             {isSpeaking ? 'Speaking...' : 'Explain my dashboard'}
           </Button>
         </div>
-        
+
         <div className="grid gap-6 md:grid-cols-3">
           {/* Weather Risk */}
           <Card className="hover:shadow-xl transition-shadow">
@@ -398,20 +366,18 @@ export function Dashboard() {
                   </p>
                 </div>
               </div>
-              
-              {/* Impact Line */}
+
               <div className="pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold">Impact:</span>{" "}
-                  {weatherRisk === "high" 
+                  {weatherRisk === "high"
                     ? "High risk to wheat - take precautions"
                     : weatherRisk === "medium"
-                    ? "Medium risk to wheat - monitor closely"
-                    : "Low risk to wheat in next 7 days"}
+                      ? "Medium risk to wheat - monitor closely"
+                      : "Low risk to wheat in next 7 days"}
                 </p>
               </div>
-              
-              {/* Source & Link */}
+
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Source: IMD weather data</span>
                 <Link to="/dashboard/weather-alerts" className="text-primary hover:underline flex items-center gap-1">
@@ -446,12 +412,11 @@ export function Dashboard() {
                   </p>
                 </div>
               </div>
-              
-              {/* Suggested Action */}
+
               <div className="pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold">Suggested action:</span>{" "}
-                  {priceTrend === "up" 
+                  {priceTrend === "up"
                     ? "Hold crop (prices rising)"
                     : "Consider selling at current prices"}
                 </p>
@@ -459,8 +424,7 @@ export function Dashboard() {
                   💡 Best sell window: 10-15 days
                 </p>
               </div>
-              
-              {/* Source & Link */}
+
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Source: Govt. mandi data</span>
                 <Link to="/dashboard/mandi-prices" className="text-primary hover:underline flex items-center gap-1">
@@ -483,8 +447,7 @@ export function Dashboard() {
                 </p>
                 <Badge variant="default" className="mt-2">87% Confidence</Badge>
               </div>
-              
-              {/* Action Buttons */}
+
               <div className="flex gap-2 pt-2 border-t">
                 <Button
                   variant={advisoryDone ? "default" : "outline"}
@@ -513,8 +476,7 @@ export function Dashboard() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              
-              {/* Source & Link */}
+
               <div className="text-xs text-muted-foreground">
                 Based on IMD weather & crop data
               </div>
@@ -552,17 +514,16 @@ export function Dashboard() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
-              {/* Interpretation & Trend */}
+
               <div className="mt-6 text-center space-y-2 w-full">
                 <p className="text-sm font-medium text-foreground">
-                  {profitScore >= 75 
+                  {profitScore >= 75
                     ? "Good profit potential if current advisory is followed"
                     : profitScore >= 50
-                    ? "Moderate profit potential - follow recommendations"
-                    : "Low profit potential - immediate action needed"}
+                      ? "Moderate profit potential - follow recommendations"
+                      : "Low profit potential - immediate action needed"}
                 </p>
-                
+
                 <div className="flex items-center justify-center gap-2 text-sm">
                   <div className={`flex items-center gap-1 ${profitTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {profitTrend >= 0 ? (
@@ -575,13 +536,12 @@ export function Dashboard() {
                     </span>
                   </div>
                 </div>
-                
+
                 <p className="text-xs text-muted-foreground mt-2">
                   Based on real-time data and AI predictions
                 </p>
               </div>
-              
-              {/* Module Link */}
+
               <Link to="/dashboard/simulator" className="mt-4 w-full">
                 <Button variant="outline" size="sm" className="w-full gap-2">
                   <Target className="h-4 w-4" />
@@ -609,56 +569,23 @@ export function Dashboard() {
                 {sortedAlerts.slice(0, 3).map((alert, index) => (
                   <div
                     key={alert.id}
-<<<<<<< HEAD
-                    className={`flex gap-4 pb-4 ${index < mockWeatherAlerts.length - 1 ? "border-b" : ""
+                    className={`flex gap-3 pb-4 ${index < 2 ? "border-b" : ""
                       }`}
                   >
-                    <div
-                      className={`h-2 w-2 rounded-full mt-2 ${alert.type === "high"
-                        ? "bg-red-500"
-                        : alert.type === "medium"
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                        }`}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold">{alert.title}</p>
-                          <p className="text-sm text-muted-foreground">{alert.description}</p>
-                        </div>
-                        <Badge
-                          variant={
-                            alert.type === "high"
-                              ? "danger"
-                              : alert.type === "medium"
-                                ? "warning"
-                                : "success"
-                          }
-                        >
-                          {alert.type.toUpperCase()}
-                        </Badge>
-=======
-                    className={`flex gap-3 pb-4 ${
-                      index < 2 ? "border-b" : ""
-                    }`}
-                  >
-                    {/* Visual Urgency Indicator */}
                     <div className="flex flex-col items-center gap-1 pt-1">
                       <div
-                        className={`h-3 w-3 rounded-full ${
-                          alert.type === "high"
+                        className={`h-3 w-3 rounded-full ${alert.type === "high"
                             ? "bg-red-500 animate-pulse"
                             : alert.type === "medium"
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
-                        }`}
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                          }`}
                       />
                       {alert.type === "high" && (
                         <Bell className="h-3 w-3 text-red-500 animate-bounce" />
                       )}
                     </div>
-                    
+
                     <div className="flex-1 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
@@ -669,8 +596,8 @@ export function Dashboard() {
                                 alert.type === "high"
                                   ? "danger"
                                   : alert.type === "medium"
-                                  ? "warning"
-                                  : "success"
+                                    ? "warning"
+                                    : "success"
                               }
                               className="text-xs"
                             >
@@ -679,25 +606,23 @@ export function Dashboard() {
                           </div>
                           <p className="text-sm text-muted-foreground">{alert.description}</p>
                         </div>
->>>>>>> d2f79fc21866b1b570ba2d23b592343421adc5d6
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-primary">
                           💡 {alert.suggestedAction}
                         </p>
                       </div>
-                      
-                      {/* CTA Links */}
+
                       <div className="flex gap-3 text-xs">
-                        <Link 
-                          to="/dashboard/crop-advisory" 
+                        <Link
+                          to="/dashboard/crop-advisory"
                           className="text-primary hover:underline font-medium flex items-center gap-1"
                         >
                           Take action <ArrowRight className="h-3 w-3" />
                         </Link>
-                        <Link 
-                          to="/dashboard/farm-log" 
+                        <Link
+                          to="/dashboard/farm-log"
                           className="text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1"
                         >
                           <BookmarkPlus className="h-3 w-3" />
@@ -712,7 +637,7 @@ export function Dashboard() {
           </Card>
         </motion.div>
       </div>
-      
+
       {/* Community Connection */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
