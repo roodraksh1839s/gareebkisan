@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useNavigate, Link } from "react-router-dom"
-import { Sprout, Tractor, ArrowRight, Mail, Lock, User, Loader2 } from "lucide-react"
+import { Tractor, ArrowRight, User, Loader2, Mail } from "lucide-react"
+import { supabase } from "../lib/supabase"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
@@ -14,6 +15,89 @@ export function Auth() {
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
+  // Auth State
+  // Auth State
+  const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
+  const [city, setCity] = useState("")
+  const [state, setState] = useState("")
+  const [linkSent, setLinkSent] = useState(false)
+  const [activeTab, setActiveTab] = useState("login")
+
+  const checkAndCreateProfile = async (userId: string, userMetadata: any = {}) => {
+    try {
+      // Check/Create Profile
+      const { data: existingFarmer, error: fetchError } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error("Error fetching profile:", fetchError)
+      }
+
+      if (existingFarmer) {
+        console.log("Farmer exists:", existingFarmer)
+      } else {
+        console.log("Creating new farmer profile with metadata:", userMetadata)
+
+        // Prioritize metadata (from signup), then state (if still active), then defaults
+        const newName = userMetadata?.full_name || name || "Farmer"
+        const newCity = userMetadata?.city || city || null
+        const newState = userMetadata?.state || state || null
+
+        const { error: insertError } = await supabase
+          .from('farmers')
+          .insert([
+            {
+              id: userId,
+              name: newName,
+              city: newCity,
+              state: newState,
+              phone: null
+            }
+          ])
+
+        if (insertError) {
+          console.error("Error inserting farmer profile:", insertError)
+          throw insertError
+        }
+        console.log("New farmer profile created")
+      }
+      return true
+    } catch (error) {
+      console.error("Error checking/creating profile:", error)
+      return false
+    }
+  }
+
+  useEffect(() => {
+    // Check initial session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        console.log("Found existing session, checking profile...")
+        await checkAndCreateProfile(session.user.id, session.user.user_metadata)
+        navigate("/dashboard")
+      }
+    }
+
+    checkSession()
+
+    // Listen for auth changes (Magic Link callback)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state change:", event, session?.user?.id)
+      if (event === 'SIGNED_IN' && session) {
+        console.log("User signed in via Magic Link/OTP, checking profile...")
+        await checkAndCreateProfile(session.user.id)
+        navigate("/dashboard")
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [navigate, name]) // name dependency is tricky but mostly fine as it's for profile creation
+
   const handleGoogleSignIn = () => {
     setIsGoogleLoading(true)
     // Simulate Google Sign-In
@@ -23,24 +107,40 @@ export function Auth() {
     }, 1500)
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      navigate("/dashboard")
-    }, 1500)
-  }
+    try {
+      console.log("Sending Magic Link to:", email)
 
-  const handleSignup = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: activeTab === "signup",
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: name,
+            city: city,
+            state: state,
+            // phone: null // We aren't collecting phone currently
+          }
+        }
+      })
+
+      console.log("SignInWithOtp result:", { data, error })
+
+      if (error) {
+        console.error("Supabase sending Magic Link error details:", error)
+        throw error
+      }
+
+      setLinkSent(true)
+      console.log("Magic Link sent successfully")
+    } catch (error: any) {
+      console.error("Error sending Magic Link:", error.message || error)
+    } finally {
       setIsLoading(false)
-      navigate("/dashboard")
-    }, 1500)
+    }
   }
 
   return (
@@ -61,11 +161,11 @@ export function Auth() {
             </p>
           </div>
         </div>
-        
+
         {/* Abstract Background Shapes */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
-        
+
         <div className="relative z-10 flex items-center gap-4 text-sm opacity-80">
           <div className="flex items-center gap-1">
             <Tractor className="h-4 w-4" />
@@ -91,7 +191,7 @@ export function Auth() {
             <span>KrishiBandhu</span>
           </div>
 
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue="login" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="login">{t('auth.login')}</TabsTrigger>
               <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
@@ -100,36 +200,44 @@ export function Auth() {
             <TabsContent value="login">
               <Card className="border-0 shadow-lg">
                 <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl font-bold text-center">{t('dashboard.welcome')}</CardTitle>
+                  <CardTitle className="text-2xl font-bold text-center">{linkSent ? "Check your email" : t('dashboard.welcome')}</CardTitle>
                   <CardDescription className="text-center">
-                    Enter your credentials to access your farm dashboard
+                    {linkSent ? "We've sent you a login link." : "Enter your email to access your farm dashboard"}
                   </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleSendOtp}>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="email">
-                        {t('auth.email')}
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="email" placeholder="kisan@example.com" className="pl-10" required />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="password">
-                          {t('auth.password')}
+                    {!linkSent ? (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none" htmlFor="email">
+                          Email Address
                         </label>
-                        <a href="#" className="text-xs text-primary hover:underline">
-                          {t('auth.forgotPassword')}
-                        </a>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="farmer@example.com"
+                            className="pl-10"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="password" type="password" placeholder="••••••••" className="pl-10" required />
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="flex justify-center">
+                          <Mail className="h-12 w-12 text-primary animate-pulse" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Click the link sent to <strong>{email}</strong> to sign in instantly.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          You can close this tab.
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </CardContent>
                   <CardFooter className="flex-col gap-4">
                     <Button className="w-full" type="submit" disabled={isLoading || isGoogleLoading}>
@@ -140,34 +248,38 @@ export function Auth() {
                         </>
                       ) : (
                         <>
-                          {t('auth.login')} <ArrowRight className="ml-2 h-4 w-4" />
+                          {linkSent ? "Sent!" : "Send Magic Link"} {!linkSent && <ArrowRight className="ml-2 h-4 w-4" />}
                         </>
                       )}
                     </Button>
-                    <div className="relative w-full">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                    {!linkSent && (
+                      <div className="relative w-full">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                        </div>
                       </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      type="button" 
-                      onClick={handleGoogleSignIn}
-                      disabled={isLoading || isGoogleLoading}
-                    >
-                      {isGoogleLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                          <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                        </svg>
-                      )}
-                      Sign in with Google
-                    </Button>
+                    )}
+                    {!linkSent && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        type="button"
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading || isGoogleLoading}
+                      >
+                        {isGoogleLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                            <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                          </svg>
+                        )}
+                        Sign in with Google
+                      </Button>
+                    )}
                   </CardFooter>
                 </form>
               </Card>
@@ -176,78 +288,131 @@ export function Auth() {
             <TabsContent value="signup">
               <Card className="border shadow-xl">
                 <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl font-bold text-center">{t('auth.register')}</CardTitle>
+                  <CardTitle className="text-2xl font-bold text-center">{linkSent ? "Check your email" : t('auth.register')}</CardTitle>
                   <CardDescription className="text-center">
-                    Start your journey towards smarter farming today
+                    {linkSent ? "We've sent you a login link." : "Start your journey towards smarter farming today"}
                   </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSignup}>
+                <form onSubmit={handleSendOtp}>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="name">
-                        {t('auth.name')}
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="name" placeholder="Ram Singh" className="pl-10" required />
+                    {!linkSent ? (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="name">
+                            {t('auth.name')}
+                          </label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="name"
+                              placeholder="Ram Singh"
+                              className="pl-10"
+                              required
+                              value={name}
+                              onChange={(e) => setName(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        {/* Phone input removed for Strict Magic Link flow */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium leading-none" htmlFor="city">
+                              City
+                            </label>
+                            <Input
+                              id="city"
+                              placeholder="Bhopal"
+                              required
+                              value={city}
+                              onChange={(e) => setCity(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium leading-none" htmlFor="state">
+                              State
+                            </label>
+                            <Input
+                              id="state"
+                              placeholder="Madhya Pradesh"
+                              required
+                              value={state}
+                              onChange={(e) => setState(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none" htmlFor="signup-email">
+                            Email Address
+                          </label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="signup-email"
+                              type="email"
+                              placeholder="farmer@example.com"
+                              className="pl-10"
+                              required
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="flex justify-center">
+                          <Mail className="h-12 w-12 text-primary animate-pulse" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Click the link sent to <strong>{email}</strong> to verify your account.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          You can close this tab.
+                        </p>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="signup-email">
-                        {t('auth.email')}
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="signup-email" placeholder="kisan@example.com" className="pl-10" required />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="signup-password">
-                        {t('auth.password')}
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="signup-password" type="password" placeholder="Create a password" className="pl-10" required />
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                   <CardFooter className="flex-col gap-4">
                     <Button className="w-full" type="submit" disabled={isLoading || isGoogleLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
+                          {t('common.loading')}
                         </>
                       ) : (
                         <>
-                          Create Account <ArrowRight className="ml-2 h-4 w-4" />
+                          {linkSent ? "Sent!" : "Sign Up"} {!linkSent && <ArrowRight className="ml-2 h-4 w-4" />}
                         </>
                       )}
                     </Button>
-                    <div className="relative w-full">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                    {!linkSent && (
+                      <div className="relative w-full">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                        </div>
                       </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      type="button" 
-                      onClick={handleGoogleSignIn}
-                      disabled={isLoading || isGoogleLoading}
-                    >
-                      {isGoogleLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                          <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                        </svg>
-                      )}
-                      Sign in with Google
-                    </Button>
+                    )}
+                    {!linkSent && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        type="button"
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading || isGoogleLoading}
+                      >
+                        {isGoogleLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                            <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                          </svg>
+                        )}
+                        Sign in with Google
+                      </Button>
+                    )}
                   </CardFooter>
                 </form>
               </Card>

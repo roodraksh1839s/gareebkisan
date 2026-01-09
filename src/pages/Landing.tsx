@@ -1,11 +1,23 @@
+import { useEffect } from "react"
 import { motion } from "framer-motion"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { supabase } from "../lib/supabase"
 import { ArrowRight, Shield, TrendingUp, AlertTriangle, Sparkles, Sprout } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 
 export function Landing() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/dashboard")
+      }
+    })
+  }, [navigate])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       {/* Navbar */}

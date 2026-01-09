@@ -9,12 +9,97 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../com
 import { getForecastByCity } from "../services/weatherService"
 import { useTranslation } from "react-i18next"
 
+import { useNavigate } from "react-router-dom"
+import { supabase } from "../lib/supabase"
+
 export function Dashboard() {
   const { t } = useTranslation()
-  const profitScore = 78
-  const priceTrend = "up" as "up" | "down" | "stable"
+  const navigate = useNavigate()
+  const [profitScore] = useState(78)
+  const [priceTrend] = useState<"up" | "down" | "stable">("up")
   const [weatherRisk, setWeatherRisk] = useState<"low" | "medium" | "high">("medium")
-  
+
+  // Initialize with null or temporary placeholder, NOT full mock data if we want strict real data
+  const [farmerData, setFarmerData] = useState<any>({ name: "Loading...", location: "Loading...", currentCrop: "Loading...", farmSize: "..." })
+  const [, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFarmerData = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session) {
+          // Force redirect to auth if no session
+          navigate("/auth")
+          return
+        }
+
+        if (session) {
+          let { data: farmer, error } = await supabase
+            .from('farmers')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+
+          // Self-heal: If profile doesn't exist, create it
+          if (!farmer) {
+            console.log("Profile missing in Dashboard, creating now...")
+            const { data: newFarmer, error: insertError } = await supabase
+              .from('farmers')
+              .insert([
+                {
+                  id: session.user.id,
+                  name: "Farmer", // Default name
+                  city: null,
+                  state: null,
+                  phone: null
+                }
+              ])
+              .select()
+              .single()
+
+            if (insertError) {
+              console.error("Dashboard auto-create profile error:", insertError)
+            } else {
+              farmer = newFarmer
+            }
+          }
+
+          if (farmer) {
+            setFarmerData({
+              name: farmer.name || "Farmer",
+              location: (farmer.city && farmer.state) ? `${farmer.city}, ${farmer.state}` : "Unknown Location",
+              currentCrop: "Wheat",
+              farmSize: "5"
+            })
+          } else {
+            // Fallback if everything fails
+            console.log("Using fallback mock data due to missing profile")
+            setFarmerData({
+              name: "Farmer",
+              location: "India",
+              currentCrop: "Wheat",
+              farmSize: "--"
+            })
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching farmer data:", error)
+        // Ensure we don't stick on loading
+        setFarmerData({
+          name: "Farmer",
+          location: "Error Loading Data",
+          currentCrop: "--",
+          farmSize: "--"
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFarmerData()
+  }, [navigate])
+
   useEffect(() => {
     // Load weather data and determine risk
     const loadWeatherRisk = async () => {
@@ -22,7 +107,7 @@ export function Dashboard() {
         const forecast = await getForecastByCity("Bhopal,IN")
         const highRiskDays = forecast.filter(day => day.riskLevel === "high").length
         const mediumRiskDays = forecast.filter(day => day.riskLevel === "medium").length
-        
+
         if (highRiskDays > 0) {
           setWeatherRisk("high")
         } else if (mediumRiskDays > 2) {
@@ -34,7 +119,7 @@ export function Dashboard() {
         console.error("Error loading weather risk:", error)
       }
     }
-    
+
     loadWeatherRisk()
   }, [])
 
@@ -49,10 +134,10 @@ export function Dashboard() {
         <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
           <CardHeader>
             <CardTitle className="text-3xl">
-              {t('dashboard.welcome')}, {mockFarmer.name}! 👋
+              {t('dashboard.welcome')}, {farmerData.name}! 👋
             </CardTitle>
             <CardDescription className="text-base">
-              {mockFarmer.location} • Currently growing {mockFarmer.currentCrop} on {mockFarmer.farmSize} acres
+              {farmerData.location} • Currently growing {farmerData.currentCrop} on {farmerData.farmSize} acres
             </CardDescription>
           </CardHeader>
         </Card>
@@ -93,8 +178,8 @@ export function Dashboard() {
                     {weatherRisk === "high"
                       ? "High rainfall expected"
                       : weatherRisk === "medium"
-                      ? "Moderate conditions"
-                      : "Clear weather ahead"}
+                        ? "Moderate conditions"
+                        : "Clear weather ahead"}
                   </p>
                 </div>
               </div>
@@ -195,18 +280,16 @@ export function Dashboard() {
                 {mockWeatherAlerts.slice(0, 3).map((alert, index) => (
                   <div
                     key={alert.id}
-                    className={`flex gap-4 pb-4 ${
-                      index < mockWeatherAlerts.length - 1 ? "border-b" : ""
-                    }`}
+                    className={`flex gap-4 pb-4 ${index < mockWeatherAlerts.length - 1 ? "border-b" : ""
+                      }`}
                   >
                     <div
-                      className={`h-2 w-2 rounded-full mt-2 ${
-                        alert.type === "high"
-                          ? "bg-red-500"
-                          : alert.type === "medium"
+                      className={`h-2 w-2 rounded-full mt-2 ${alert.type === "high"
+                        ? "bg-red-500"
+                        : alert.type === "medium"
                           ? "bg-yellow-500"
                           : "bg-green-500"
-                      }`}
+                        }`}
                     />
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
@@ -219,8 +302,8 @@ export function Dashboard() {
                             alert.type === "high"
                               ? "danger"
                               : alert.type === "medium"
-                              ? "warning"
-                              : "success"
+                                ? "warning"
+                                : "success"
                           }
                         >
                           {alert.type.toUpperCase()}
