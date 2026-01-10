@@ -122,10 +122,47 @@
       "basedOnAI": "Real-time data और AI predictions के आधार पर"
     },
     "alerts": {
-      "title": "Recent Alerts (ताजा अलर्ट)",
-      "takeAction": "Action लें",
-      "addToLog": "Farm Log में Add करें",
-      "actionableSuggestions": "आपके फार्म के लिए Actionable Suggestions"
+      "title": "हाल की चेतावनियाँ",
+      "takeAction": "कार्रवाई करें",
+      "addToLog": "Farm Log में जोड़ें",
+      "actionableSuggestions": "आपके खेत के लिए कार्रवाई योग्य सुझाव",
+      "severity": {
+        "high": "उच्च",
+        "medium": "मध्यम",
+        "low": "कम"
+      },
+      "types": {
+        "heavyRainfall": {
+          "title": "भारी बारिश की चेतावनी",
+          "description": "अगले 48 घंटों में 50-70 मिमी बारिश की संभावना",
+          "cropImpact": "खड़ी गेहूं की फसल को नुकसान हो सकता है",
+          "suggestedAction": "जल्दी कटाई करें या जल निकासी की व्यवस्था करें"
+        },
+        "temperatureDrop": {
+          "title": "तापमान में गिरावट",
+          "description": "तापमान 8°C तक गिरने की संभावना है",
+          "cropImpact": "संवेदनशील फसलों में पाले का खतरा",
+          "suggestedAction": "फसलों को सुरक्षा शीट से ढकें"
+        },
+        "optimalWeather": {
+          "title": "अनुकूल मौसम आगे",
+          "description": "अगले 3 दिनों के लिए साफ आसमान और सामान्य तापमान की उम्मीद",
+          "cropImpact": "फसल वृद्धि के लिए अनुकूल",
+          "suggestedAction": "उर्वरक डालने का अच्छा समय है"
+        },
+        "highWind": {
+          "title": "तेज हवा की चेतावनी",
+          "description": "40 किमी/घंटा तक हवा की गति की उम्मीद",
+          "cropImpact": "लंबी फसलों में गिरावट हो सकती है",
+          "suggestedAction": "कमजोर पौधों को सहारा दें"
+        },
+        "pestAttack": {
+          "title": "कीट प्रकोप की चेतावनी",
+          "description": "पड़ोसी जिलों में माहू का प्रकोप दर्ज किया गया",
+          "cropImpact": "गेहूं और सरसों की फसलों के लिए उच्च जोखिम",
+          "suggestedAction": "रोकथाम के लिए कीटनाशक का प्रयोग करें"
+        }
+      }
     },
     "community": {
       "join": "Farmer Community Join करें",

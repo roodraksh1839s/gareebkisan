@@ -118,6 +118,15 @@ export const mockWeatherAlerts: WeatherAlert[] = [
   },
 ]
 
+// Alert type mapping for translations
+export const alertTypeKeys: Record<string, string> = {
+  "Heavy Rainfall Warning": "heavyRainfall",
+  "Temperature Drop": "temperatureDrop",
+  "Optimal Weather Ahead": "optimalWeather",
+  "High Wind Alert": "highWind",
+  "Pest Attack Warning": "pestAttack",
+}
+
 export const mockCropAdvisory: CropAdvisory = {
   crop: "Wheat",
   growthStage: "Tillering",

@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { CircularProgress } from "../components/ui/circular-progress"
-import { mockFarmer, mockWeatherAlerts, mockCropAdvisory } from "../data/mockData"
+import { mockFarmer, mockWeatherAlerts, mockCropAdvisory, alertTypeKeys } from "../data/mockData"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip"
 import { getForecastByCity } from "../services/weatherService"
 import { getLatestPrice, getPriceTrend } from "../services/mandiService"
@@ -235,6 +235,16 @@ export function Dashboard() {
     const priority = { high: 3, medium: 2, low: 1 }
     return priority[b.type] - priority[a.type]
   })
+
+  // Helper function to get translated alert content
+  const getAlertTranslation = (alert: typeof mockWeatherAlerts[0], field: 'title' | 'description' | 'cropImpact' | 'suggestedAction') => {
+    const typeKey = alertTypeKeys[alert.title]
+    if (typeKey) {
+      return t(`dashboard.alerts.types.${typeKey}.${field}`)
+    }
+    // Fallback to original text if translation not found
+    return alert[field]
+  }
 
   return (
     <div className="space-y-6">
@@ -565,44 +575,43 @@ export function Dashboard() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="font-semibold">{alert.title}</p>
-                            <Badge
-                              variant={
-                                alert.type === "high"
-                                  ? "danger"
-                                  : alert.type === "medium"
-                                    ? "warning"
-                                    : "success"
-                              }
-                              className="text-xs"
-                            >
-                              {alert.type.toUpperCase()}
-                            </Badge>
+                              <p className="font-semibold">{getAlertTranslation(alert, 'title')}</p>
+                              <Badge
+                                variant={
+                                  alert.type === "high"
+                                    ? "danger"
+                                    : alert.type === "medium"
+                                      ? "warning"
+                                      : "success"
+                                }
+                                className="text-xs"
+                              >
+                                {t(`dashboard.alerts.severity.${alert.type}`)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{getAlertTranslation(alert, 'description')}</p>
                           </div>
-                          <p className="text-sm text-muted-foreground">{alert.description}</p>
-                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 mt-3">
                         <p className="text-sm font-medium text-primary">
-                          💡 {alert.suggestedAction}
+                          💡 {getAlertTranslation(alert, 'suggestedAction')}
                         </p>
-                      </div>
-
-                      <div className="flex gap-3 text-xs">
-                        <Link
-                          to="/dashboard/crop-advisory"
-                          className="text-primary hover:underline font-medium flex items-center gap-1"
-                        >
-                          {t('dashboard.alerts.takeAction')} <ArrowRight className="h-3 w-3" />
-                        </Link>
-                        <Link
-                          to="/dashboard/farm-log"
-                          className="text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1"
-                        >
-                          <BookmarkPlus className="h-3 w-3" />
-                          {t('dashboard.alerts.addToLog')}
-                        </Link>
+                        <div className="flex items-center gap-4">
+                          <Link
+                            to="/dashboard/crop-advisory"
+                            className="text-primary hover:underline font-medium flex items-center gap-1"
+                          >
+                            {t('dashboard.alerts.takeAction')} <ArrowRight className="h-3 w-3" />
+                          </Link>
+                          <Link
+                            to="/dashboard/farm-log"
+                            className="text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1"
+                          >
+                            <BookmarkPlus className="h-3 w-3" />
+                            {t('dashboard.alerts.addToLog')}
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>

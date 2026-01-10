@@ -125,7 +125,44 @@
       "title": "Recent Alerts",
       "takeAction": "Take action",
       "addToLog": "Add to Farm Log",
-      "actionableSuggestions": "Actionable suggestions for your farm"
+      "actionableSuggestions": "Actionable suggestions for your farm",
+      "severity": {
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW"
+      },
+      "types": {
+        "heavyRainfall": {
+          "title": "Heavy Rainfall Warning",
+          "description": "Expected 50-70mm rainfall in next 48 hours",
+          "cropImpact": "May damage standing wheat crop",
+          "suggestedAction": "Harvest early or provide drainage"
+        },
+        "temperatureDrop": {
+          "title": "Temperature Drop",
+          "description": "Temperature expected to drop to 8°C",
+          "cropImpact": "Frost risk for sensitive crops",
+          "suggestedAction": "Cover crops with protective sheets"
+        },
+        "optimalWeather": {
+          "title": "Optimal Weather Ahead",
+          "description": "Clear skies and moderate temperature expected for next 3 days",
+          "cropImpact": "Favorable for crop growth",
+          "suggestedAction": "Good time for fertilizer application"
+        },
+        "highWind": {
+          "title": "High Wind Alert",
+          "description": "Wind speeds up to 40 km/h expected",
+          "cropImpact": "May cause lodging in tall crops",
+          "suggestedAction": "Provide support to vulnerable plants"
+        },
+        "pestAttack": {
+          "title": "Pest Attack Warning",
+          "description": "Aphid outbreak reported in neighboring districts",
+          "cropImpact": "High risk for wheat and mustard crops",
+          "suggestedAction": "Apply pesticide preventively"
+        }
+      }
     },
     "community": {
       "join": "Join the Farmer Community",
