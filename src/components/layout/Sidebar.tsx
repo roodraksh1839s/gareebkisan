@@ -31,10 +31,10 @@ export function Sidebar({ isMobileOpen = false, onClose }: SidebarProps) {
 
   const menuItems = [
     { icon: LayoutDashboard, label: t('nav.dashboard'), path: "/dashboard" },
-    { icon: Sprout, label: "Crop Advisory", path: "/dashboard/crop-advisory" },
+    { icon: Sprout, label: t('nav.cropAdvisory'), path: "/dashboard/crop-advisory" },
     { icon: CloudRain, label: t('nav.weather'), path: "/dashboard/weather-alerts" },
-    { icon: TrendingUp, label: "Mandi Prices", path: "/dashboard/mandi-prices" },
-    { icon: Calculator, label: "Simulator", path: "/dashboard/simulator" },
+    { icon: TrendingUp, label: t('nav.mandiPrices'), path: "/dashboard/mandi-prices" },
+    { icon: Calculator, label: t('nav.simulator'), path: "/dashboard/simulator" },
     { icon: Users, label: t('nav.community'), path: "/dashboard/community" },
     { icon: ShoppingBag, label: t('nav.marketplace'), path: "/dashboard/marketplace" },
     { icon: FileText, label: t('nav.schemes'), path: "/dashboard/schemes" },

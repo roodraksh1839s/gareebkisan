@@ -224,7 +224,7 @@ export function Dashboard() {
     }
     return {
       icon: "✅",
-      text: "All priority tasks completed. Check marketplace for selling opportunities",
+      text: t('dashboard.priorityTasks.allCompleted'),
       type: "success" as const
     }
   }
@@ -250,7 +250,7 @@ export function Dashboard() {
               {t('dashboard.welcome')}, {farmerData.name}! 👋
             </CardTitle>
             <CardDescription className="text-base">
-              {farmerData.location} • Currently growing {farmerData.currentCrop} on {farmerData.farmSize} acres
+              {farmerData.location} • {t('dashboard.currentlyGrowing')} {farmerData.currentCrop} {t('dashboard.on')} {farmerData.farmSize} {t('dashboard.acres')}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -272,7 +272,7 @@ export function Dashboard() {
                 <span className="text-2xl">{topAction.icon}</span>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Today's Priority
+                    {t('dashboard.todayPriority')}
                   </p>
                   <p className="font-semibold text-base">
                     {topAction.text}
@@ -281,7 +281,7 @@ export function Dashboard() {
               </div>
               <Link to="/dashboard/crop-advisory">
                 <Button size="sm" variant={topAction.type === 'urgent' ? 'default' : 'outline'}>
-                  Take Action <ArrowRight className="ml-1 h-4 w-4" />
+                  {t('dashboard.takeAction')} <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </Link>
             </div>
@@ -296,7 +296,7 @@ export function Dashboard() {
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Today's Intelligence</h2>
+          <h2 className="text-2xl font-bold text-foreground">{t('dashboard.todaysIntelligence')}</h2>
           <Button
             variant="outline"
             size="sm"
@@ -305,7 +305,7 @@ export function Dashboard() {
             className="gap-2"
           >
             <Volume2 className={`h-4 w-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-            {isSpeaking ? 'Speaking...' : 'Explain my dashboard'}
+            {isSpeaking ? t('dashboard.speaking') : t('dashboard.explainDashboard')}
           </Button>
         </div>
 
@@ -313,7 +313,7 @@ export function Dashboard() {
           {/* Weather Risk */}
           <Card className="hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-lg">Weather Risk</CardTitle>
+              <CardTitle className="text-lg">{t('dashboard.weatherRisk.title')}</CardTitle>
               <Badge
                 variant={
                   weatherRisk === "high" ? "danger" : weatherRisk === "medium" ? "warning" : "success"
@@ -332,32 +332,32 @@ export function Dashboard() {
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Next 7 days</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.weatherRisk.next7Days')}</p>
                   <p className="font-semibold">
                     {weatherRisk === "high"
-                      ? "High rainfall expected"
+                      ? t('dashboard.weatherRisk.highRainfall')
                       : weatherRisk === "medium"
-                        ? "Moderate conditions"
-                        : "Clear weather ahead"}
+                        ? t('dashboard.weatherRisk.moderateConditions')
+                        : t('dashboard.weatherRisk.clearWeather')}
                   </p>
                 </div>
               </div>
 
               <div className="pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold">Impact:</span>{" "}
+                  <span className="font-semibold">{t('dashboard.weatherRisk.impact')}:</span>{" "}
                   {weatherRisk === "high"
-                    ? "High risk to wheat - take precautions"
+                    ? t('dashboard.weatherRisk.highRiskToWheat')
                     : weatherRisk === "medium"
-                      ? "Medium risk to wheat - monitor closely"
-                      : "Low risk to wheat in next 7 days"}
+                      ? t('dashboard.weatherRisk.mediumRiskToWheat')
+                      : t('dashboard.weatherRisk.lowRiskToWheat')}
                 </p>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Source: IMD weather data</span>
+                <span className="text-muted-foreground">{t('dashboard.weatherRisk.source')}</span>
                 <Link to="/dashboard/weather-alerts" className="text-primary hover:underline flex items-center gap-1">
-                  View forecast <ExternalLink className="h-3 w-3" />
+                  {t('dashboard.weatherRisk.viewForecast')} <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
             </CardContent>
@@ -366,9 +366,9 @@ export function Dashboard() {
           {/* Price Trend */}
           <Card className="hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-lg">Price Trend</CardTitle>
+              <CardTitle className="text-lg">{t('dashboard.priceTrend.title')}</CardTitle>
               <Badge variant="success">
-                {priceTrend === "up" ? "RISING" : "STABLE"}
+                {priceTrend === "up" ? t('dashboard.priceTrend.rising') : t('dashboard.priceTrend.stable')}
               </Badge>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -381,30 +381,30 @@ export function Dashboard() {
                   <TrendingUp className="h-8 w-8 text-gray-500" />
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">{mockFarmer.currentCrop} prices</p>
-                  <p className="font-semibold">₹{currentPrice.toLocaleString()}/quintal</p>
+                  <p className="text-sm text-muted-foreground">{mockFarmer.currentCrop} {t('dashboard.priceTrend.prices')}</p>
+                  <p className="font-semibold">₹{currentPrice.toLocaleString()}{t('dashboard.priceTrend.perQuintal')}</p>
                   <p className={`text-sm ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(1)}% this week
+                    {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(1)}% {t('dashboard.priceTrend.thisWeek')}
                   </p>
                 </div>
               </div>
 
               <div className="pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold">Suggested action:</span>{" "}
+                  <span className="font-semibold">{t('dashboard.priceTrend.suggestedAction')}:</span>{" "}
                   {priceTrend === "up"
-                    ? "Hold crop (prices rising)"
-                    : "Consider selling at current prices"}
+                    ? t('dashboard.priceTrend.holdCrop')
+                    : t('dashboard.priceTrend.sellNow')}
                 </p>
                 <p className="text-xs text-primary mt-1">
-                  💡 Best sell window: 10-15 days
+                  {t('dashboard.priceTrend.bestWindow')}
                 </p>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Source: Govt. mandi data</span>
+                <span className="text-muted-foreground">{t('dashboard.priceTrend.source')}</span>
                 <Link to="/dashboard/mandi-prices" className="text-primary hover:underline flex items-center gap-1">
-                  See predictions <ExternalLink className="h-3 w-3" />
+                  {t('dashboard.priceTrend.seePredictions')} <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
             </CardContent>
@@ -413,15 +413,15 @@ export function Dashboard() {
           {/* Advisory Summary */}
           <Card className="hover:shadow-xl transition-shadow">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Latest Advisory</CardTitle>
+              <CardTitle className="text-lg">{t('dashboard.latestAdvisory.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2">
-                <p className="text-sm font-medium">Fertilizer Application</p>
+                <p className="text-sm font-medium">{t('dashboard.latestAdvisory.fertilizerApplication')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Apply 50kg Urea per acre. Nitrogen is critical at tillering stage.
+                  {t('dashboard.latestAdvisory.apply50kgUrea')}. {t('dashboard.latestAdvisory.nitrogenCritical')}.
                 </p>
-                <Badge variant="default" className="mt-2">87% Confidence</Badge>
+                <Badge variant="default" className="mt-2">87% {t('dashboard.latestAdvisory.confidence')}</Badge>
               </div>
 
               <div className="flex gap-2 pt-2 border-t">
@@ -432,7 +432,7 @@ export function Dashboard() {
                   className="flex-1"
                 >
                   <Check className="h-4 w-4 mr-1" />
-                  {advisoryDone ? "Done" : "Mark Done"}
+                  {advisoryDone ? t('dashboard.latestAdvisory.done') : t('dashboard.latestAdvisory.markDone')}
                 </Button>
                 <TooltipProvider>
                   <Tooltip>
@@ -447,14 +447,14 @@ export function Dashboard() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Explain this advisory</p>
+                      <p>{t('dashboard.latestAdvisory.explain')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
 
               <div className="text-xs text-muted-foreground">
-                Based on IMD weather & crop data
+                {t('dashboard.latestAdvisory.source')}
               </div>
             </CardContent>
           </Card>
@@ -471,9 +471,9 @@ export function Dashboard() {
         >
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold">Profit Score</CardTitle>
+              <CardTitle className="text-xl font-bold">{t('dashboard.profitScore.title')}</CardTitle>
               <CardDescription>
-                Your current profit potential based on crop condition, market prices, and weather
+                {t('dashboard.profitScore.description')}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center py-6">
@@ -484,8 +484,7 @@ export function Dashboard() {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p>
-                      This score combines crop health, market prices, weather conditions, and best practices.
-                      Higher scores indicate better profit potential.
+                      {t('dashboard.profitScore.tooltipText')}
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -494,10 +493,10 @@ export function Dashboard() {
               <div className="mt-6 text-center space-y-2 w-full">
                 <p className="text-sm font-medium text-foreground">
                   {profitScore >= 75
-                    ? "Good profit potential if current advisory is followed"
+                    ? t('dashboard.profitScore.goodPotential')
                     : profitScore >= 50
-                      ? "Moderate profit potential - follow recommendations"
-                      : "Low profit potential - immediate action needed"}
+                      ? t('dashboard.profitScore.moderatePotential')
+                      : t('dashboard.profitScore.lowPotential')}
                 </p>
 
                 <div className="flex items-center justify-center gap-2 text-sm">
@@ -508,20 +507,20 @@ export function Dashboard() {
                       <TrendingDown className="h-4 w-4" />
                     )}
                     <span className="font-semibold">
-                      {profitTrend >= 0 ? '+' : ''}{profitTrend}% since last week
+                      {profitTrend >= 0 ? '+' : ''}{profitTrend}% {t('dashboard.profitScore.sinceLastWeek')}
                     </span>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground mt-2">
-                  Based on real-time data and AI predictions
+                  {t('dashboard.profitScore.basedOnAI')}
                 </p>
               </div>
 
               <Link to="/dashboard/simulator" className="mt-4 w-full">
                 <Button variant="outline" size="sm" className="w-full gap-2">
                   <Target className="h-4 w-4" />
-                  Try What-If Simulator
+                  {t('dashboard.profitScore.trySimulator')}
                   <ArrowRight className="h-4 w-4 ml-auto" />
                 </Button>
               </Link>
@@ -537,8 +536,8 @@ export function Dashboard() {
         >
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-bold">Recent Alerts</CardTitle>
-              <CardDescription>Actionable suggestions for your farm</CardDescription>
+              <CardTitle className="text-xl font-bold">{t('dashboard.alerts.title')}</CardTitle>
+              <CardDescription>{t('dashboard.alerts.actionableSuggestions')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -595,14 +594,14 @@ export function Dashboard() {
                           to="/dashboard/crop-advisory"
                           className="text-primary hover:underline font-medium flex items-center gap-1"
                         >
-                          Take action <ArrowRight className="h-3 w-3" />
+                          {t('dashboard.alerts.takeAction')} <ArrowRight className="h-3 w-3" />
                         </Link>
                         <Link
                           to="/dashboard/farm-log"
                           className="text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1"
                         >
                           <BookmarkPlus className="h-3 w-3" />
-                          Add to Farm Log
+                          {t('dashboard.alerts.addToLog')}
                         </Link>
                       </div>
                     </div>
@@ -627,9 +626,9 @@ export function Dashboard() {
                 <div className="flex items-center gap-3">
                   <Users className="h-6 w-6 text-purple-600" />
                   <div>
-                    <p className="font-semibold">Join the Farmer Community</p>
+                    <p className="font-semibold">{t('dashboard.community.join')}</p>
                     <p className="text-sm text-muted-foreground">
-                      See how other farmers are managing their crops in similar conditions
+                      {t('dashboard.community.description')}
                     </p>
                   </div>
                 </div>

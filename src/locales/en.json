@@ -5,11 +5,14 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "cropAdvisory": "Crop Advisory",
     "farmLog": "Farm Log",
     "marketplace": "Marketplace",
     "community": "Community",
     "schemes": "Schemes",
     "weather": "Weather Alerts",
+    "mandiPrices": "Mandi Prices",
+    "simulator": "Simulator",
     "settings": "Settings",
     "profile": "Profile",
     "logout": "Logout"
@@ -65,11 +68,21 @@
     "todaysIntelligence": "Today's Intelligence",
     "explainDashboard": "Explain my dashboard",
     "speaking": "Speaking...",
+    "currentlyGrowing": "Currently growing",
+    "on": "on",
+    "acres": "acres",
     "weatherRisk": {
       "title": "Weather Risk",
       "impact": "Impact",
       "source": "Source: IMD weather data",
-      "viewForecast": "View forecast"
+      "viewForecast": "View forecast",
+      "next7Days": "Next 7 days",
+      "highRainfall": "High rainfall expected",
+      "moderateConditions": "Moderate conditions",
+      "clearWeather": "Clear weather ahead",
+      "highRiskToWheat": "High risk to wheat - take precautions",
+      "mediumRiskToWheat": "Medium risk to wheat - monitor closely",
+      "lowRiskToWheat": "Low risk to wheat in next 7 days"
     },
     "priceTrend": {
       "title": "Price Trend",
@@ -78,14 +91,24 @@
       "sellNow": "Consider selling at current prices",
       "bestSellWindow": "Best sell window",
       "source": "Source: Govt. mandi data",
-      "seePredictions": "See predictions"
+      "seePredictions": "See predictions",
+      "prices": "prices",
+      "perQuintal": "/quintal",
+      "thisWeek": "this week",
+      "rising": "RISING",
+      "stable": "STABLE",
+      "bestWindow": "💡 Best sell window: 10-15 days"
     },
     "latestAdvisory": {
       "title": "Latest Advisory",
       "markDone": "Mark Done",
       "done": "Done",
       "explain": "Explain this advisory",
-      "source": "Based on IMD weather & crop data"
+      "source": "Based on IMD weather & crop data",
+      "fertilizerApplication": "Fertilizer Application",
+      "apply50kgUrea": "Apply 50kg Urea per acre",
+      "nitrogenCritical": "Nitrogen is critical at tillering stage",
+      "confidence": "Confidence"
     },
     "profitScore": {
       "title": "Profit Score",
@@ -93,16 +116,26 @@
       "moderatePotential": "Moderate profit potential - follow recommendations",
       "lowPotential": "Low profit potential - immediate action needed",
       "sinceLastWeek": "since last week",
-      "trySimulator": "Try What-If Simulator"
+      "trySimulator": "Try What-If Simulator",
+      "description": "Your current profit potential based on crop condition, market prices, and weather",
+      "tooltipText": "This score combines crop health, market prices, weather conditions, and best practices. Higher scores indicate better profit potential.",
+      "basedOnAI": "Based on real-time data and AI predictions"
     },
     "alerts": {
       "title": "Recent Alerts",
       "takeAction": "Take action",
-      "addToLog": "Add to Farm Log"
+      "addToLog": "Add to Farm Log",
+      "actionableSuggestions": "Actionable suggestions for your farm"
     },
     "community": {
       "join": "Join the Farmer Community",
       "description": "See how other farmers are managing their crops in similar conditions"
+    },
+    "priorityTasks": {
+      "allCompleted": "All priority tasks completed. Check marketplace for selling opportunities",
+      "urgent": "urgent",
+      "advisory": "advisory",
+      "success": "success"
     }
   },
   "farmLog": {
