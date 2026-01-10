@@ -26,7 +26,7 @@ export function Landing() {
       {/* Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-md">
         <div className="flex items-center gap-2 font-bold text-xl text-primary">
-          <img src="/logo.png" alt="KrishiBandhu" className="h-10 w-10 rounded-lg object-contain" />
+          <img src="/logo.png" alt="KrishiBandhu" className="h-20 w-20 rounded-lg object-contain" />
           <span>KrishiBandhu</span>
         </div>
         <div className="flex items-center gap-4">

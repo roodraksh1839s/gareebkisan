@@ -241,7 +241,7 @@ export function Auth() {
       <div className="hidden lg:flex flex-col justify-between bg-primary p-10 text-primary-foreground relative overflow-hidden">
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-2 text-2xl font-bold">
-            <img src="/logo.png" alt="KrishiBandhu" className="h-10 w-10 rounded-lg" />
+            <img src="/logo.png" alt="KrishiBandhu" className="h-16 w-16 rounded-lg object-contain" />
             <span>KrishiBandhu</span>
           </Link>
           <div className="mt-20">
@@ -279,7 +279,7 @@ export function Auth() {
           className="w-full max-w-md space-y-6"
         >
           <div className="lg:hidden flex items-center gap-2 text-xl font-bold mb-8 justify-center text-primary">
-            <img src="/logo.png" alt="KrishiBandhu" className="h-8 w-8 rounded-lg" />
+            <img src="/logo.png" alt="KrishiBandhu" className="h-14 w-14 rounded-lg object-contain" />
             <span>KrishiBandhu</span>
           </div>
 
